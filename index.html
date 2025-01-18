@@ -3,33 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>World Tracking AR</title>
-  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <title>AR 3D Object Selector</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- AR Scene -->
-  <a-scene
-    embedded
-    arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false;"
-    renderer="logarithmicDepthBuffer: true;"
-    vr-mode-ui="enabled: false">
-    
-    <!-- 3D Model (GLB) -->
-    <a-entity
-      id="model"
-      gltf-model="assets/shape1.glb"
-      scale="0.5 0.5 0.5"
-      position="0 0 -1" 
-      rotation="0 180 0">
-    </a-entity>
+  <div class="container">
+    <!-- Video feed for hand detection -->
+    <video id="video" autoplay muted playsInline></video>
 
-    <!-- Camera -->
-    <a-entity camera></a-entity>
-  </a-scene>
+    <!-- Canvas for 3D rendering -->
+    <canvas id="canvas"></canvas>
+  </div>
 
-  <!-- Add Interaction Script -->
+  <!-- HandTrack.js -->
+  <script src="handtrack.min.js"></script>
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r146/three.min.js"></script>
+  <!-- GLTF Loader -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.146/examples/js/loaders/GLTFLoader.js"></script>
+  <!-- Main Script -->
   <script src="script.js"></script>
 </body>
 </html>
