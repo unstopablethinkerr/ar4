@@ -1,62 +1,43 @@
-// Gesture Interaction for Rotation and Scaling
-AFRAME.registerComponent('gesture-rotation', {
-  init: function () {
-    this.scaleFactor = 1;
-    this.rotationSpeed = 0.005;
-    this.isRotating = false;
-    this.initialScale = this.el.object3D.scale.clone();
+// Wait for the scene to load
+document.querySelector('a-scene').addEventListener('loaded', () => {
+  const model = document.querySelector('#model');
 
-    // Touch Start Event
-    this.el.sceneEl.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 1) {
-        this.isRotating = true;
-      }
-    });
+  // Pin the object to a specific location in the real world
+  let isPinned = false;
+  let pinnedPosition = null;
+  let pinnedRotation = null;
 
-    // Touch End Event
-    this.el.sceneEl.addEventListener('touchend', () => {
-      this.isRotating = false;
-    });
+  // Pin the object when the user taps the screen
+  window.addEventListener('touchstart', () => {
+    if (!isPinned) {
+      // Get the current camera position and rotation
+      const camera = document.querySelector('[camera]').object3D;
+      const cameraPosition = camera.getWorldPosition(new THREE.Vector3());
+      const cameraRotation = camera.getWorldQuaternion(new THREE.Quaternion());
 
-    // Touch Move Event
-    this.el.sceneEl.addEventListener('touchmove', (e) => {
-      if (this.isRotating && e.touches.length === 1) {
-        const touch = e.touches[0];
-        const deltaX = touch.clientX - this.lastX;
-        this.el.object3D.rotation.y += deltaX * this.rotationSpeed;
-      }
-      this.lastX = e.touches[0].clientX;
-    });
-  }
-});
+      // Set the object's position and rotation relative to the camera
+      pinnedPosition = cameraPosition.clone();
+      pinnedRotation = cameraRotation.clone();
 
-AFRAME.registerComponent('gesture-scale', {
-  init: function () {
-    this.initialScale = this.el.object3D.scale.clone();
-    this.scaleFactor = 1;
+      // Mark the object as pinned
+      isPinned = true;
+    }
+  });
 
-    // Touch Start Event
-    this.el.sceneEl.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 2) {
-        this.initialDistance = this.getTouchDistance(e.touches);
-      }
-    });
+  // Update the object's position and rotation based on the camera's movement
+  document.querySelector('a-scene').addEventListener('renderstart', () => {
+    if (isPinned) {
+      const camera = document.querySelector('[camera]').object3D;
+      const cameraPosition = camera.getWorldPosition(new THREE.Vector3());
+      const cameraRotation = camera.getWorldQuaternion(new THREE.Quaternion());
 
-    // Touch Move Event
-    this.el.sceneEl.addEventListener('touchmove', (e) => {
-      if (e.touches.length === 2) {
-        const currentDistance = this.getTouchDistance(e.touches);
-        this.scaleFactor = currentDistance / this.initialDistance;
-        this.el.object3D.scale.x = this.initialScale.x * this.scaleFactor;
-        this.el.object3D.scale.y = this.initialScale.y * this.scaleFactor;
-        this.el.object3D.scale.z = this.initialScale.z * this.scaleFactor;
-      }
-    });
-  },
+      // Calculate the object's new position and rotation
+      const newPosition = pinnedPosition.clone().sub(cameraPosition);
+      const newRotation = pinnedRotation.clone().multiply(cameraRotation.inverse());
 
-  getTouchDistance: function (touches) {
-    const dx = touches[0].clientX - touches[1].clientX;
-    const dy = touches[0].clientY - touches[1].clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
+      // Update the object's position and rotation
+      model.object3D.position.copy(newPosition);
+      model.object3D.quaternion.copy(newRotation);
+    }
+  });
 });
