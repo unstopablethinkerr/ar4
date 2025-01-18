@@ -1,41 +1,31 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Markerless AR with Hand Gesture</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Include A-Frame and AR.js -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <!-- Include TensorFlow.js and Handpose -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose"></script>
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
-        }
-        #ar-scene {
-            width: 100%;
-            height: 100%;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markerless AR</title>
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- AR scene setup -->
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" renderer="logarithmicDepthBuffer: true;">
-        <!-- Camera -->
-        <a-entity camera></a-entity>
-        <!-- 3D objects -->
-        <a-entity id="object1" gltf-model="https://github.com/unstopablethinkerr/ar3/raw/refs/heads/main/shape1.glb" scale="0.1 0.1 0.1" position="-1 0 -2"></a-entity>
-        <a-entity id="object2" gltf-model="https://github.com/unstopablethinkerr/ar3/raw/refs/heads/main/shape2.glb" scale="0.1 0.1 0.1" position="0 0 -2"></a-entity>
-        <a-entity id="object3" gltf-model="https://github.com/unstopablethinkerr/ar3/raw/refs/heads/main/shape3.glb" scale="0.1 0.1 0.1" position="1 0 -2"></a-entity>
-    </a-scene>
+  <!-- AR Scene -->
+  <a-scene embedded arjs="sourceType: webcam; trackingMethod: best;">
+    <!-- 3D Model (GLB) -->
+    <a-entity
+      gltf-model="assets/model.glb"
+      scale="0.5 0.5 0.5"
+      position="0 0.5 -1"
+      rotation="0 180 0"
+      gesture-rotation
+      gesture-scale>
+    </a-entity>
 
-    <!-- Include custom JavaScript -->
-    <script src="script.js"></script>
+    <!-- Camera -->
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <!-- Add Gesture Interaction -->
+  <script src="script.js"></script>
 </body>
 </html>
