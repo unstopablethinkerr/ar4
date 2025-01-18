@@ -1,62 +1,62 @@
-// Wait for the scene to load
-document.querySelector('a-scene').addEventListener('loaded', function () {
-    const sceneEl = document.querySelector('a-scene');
-    const objects = [
-        document.getElementById('object1'),
-        document.getElementById('object2'),
-        document.getElementById('object3')
-    ];
+// Gesture Interaction for Rotation and Scaling
+AFRAME.registerComponent('gesture-rotation', {
+  init: function () {
+    this.scaleFactor = 1;
+    this.rotationSpeed = 0.005;
+    this.isRotating = false;
+    this.initialScale = this.el.object3D.scale.clone();
 
-    // Initialize Handpose
-    let handposeModel;
-    let videoElement;
+    // Touch Start Event
+    this.el.sceneEl.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        this.isRotating = true;
+      }
+    });
 
-    async function setupHandpose() {
-        // Get the video feed from AR.js
-        videoElement = document.querySelector('a-scene').systems.arjs.getSource().domElement;
+    // Touch End Event
+    this.el.sceneEl.addEventListener('touchend', () => {
+      this.isRotating = false;
+    });
 
-        // Load the Handpose model
-        handposeModel = await handpose.load();
+    // Touch Move Event
+    this.el.sceneEl.addEventListener('touchmove', (e) => {
+      if (this.isRotating && e.touches.length === 1) {
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - this.lastX;
+        this.el.object3D.rotation.y += deltaX * this.rotationSpeed;
+      }
+      this.lastX = e.touches[0].clientX;
+    });
+  }
+});
 
-        // Start hand detection
-        detectHand();
-    }
+AFRAME.registerComponent('gesture-scale', {
+  init: function () {
+    this.initialScale = this.el.object3D.scale.clone();
+    this.scaleFactor = 1;
 
-    async function detectHand() {
-        if (!handposeModel || !videoElement) return;
+    // Touch Start Event
+    this.el.sceneEl.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        this.initialDistance = this.getTouchDistance(e.touches);
+      }
+    });
 
-        // Detect hands in the video feed
-        const predictions = await handposeModel.estimateHands(videoElement);
-        if (predictions.length > 0) {
-            const hand = predictions[0];
-            const indexFingerTip = hand.annotations.indexFinger[3]; // Tip of the index finger
+    // Touch Move Event
+    this.el.sceneEl.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2) {
+        const currentDistance = this.getTouchDistance(e.touches);
+        this.scaleFactor = currentDistance / this.initialDistance;
+        this.el.object3D.scale.x = this.initialScale.x * this.scaleFactor;
+        this.el.object3D.scale.y = this.initialScale.y * this.scaleFactor;
+        this.el.object3D.scale.z = this.initialScale.z * this.scaleFactor;
+      }
+    });
+  },
 
-            // Convert finger tip position to screen coordinates
-            const screenX = indexFingerTip[0];
-            const screenY = indexFingerTip[1];
-
-            // Raycast to detect which object is being pointed at
-            const intersection = sceneEl.components.raycaster.intersectObjects(objects);
-            if (intersection.length > 0) {
-                const pointedObject = intersection[0].object.el;
-                animateObject(pointedObject);
-            }
-        }
-
-        // Continue detecting hands
-        requestAnimationFrame(detectHand);
-    }
-
-    // Function to animate the pointed object
-    function animateObject(object) {
-        object.setAttribute('animation', {
-            property: 'rotation',
-            to: '0 360 0',
-            dur: 2000,
-            loop: false
-        });
-    }
-
-    // Initialize Handpose
-    setupHandpose();
+  getTouchDistance: function (touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
 });
