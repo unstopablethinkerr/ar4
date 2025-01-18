@@ -3,46 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Markerless AR Template</title>
+  <title>Markerless AR Base</title>
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-  <script src="https://raw.githack.com/jeromeetienne/AR.js/master/aframe/build/aframe-ar.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/jeromeetienne/ar.js@2.3.1/aframe/build/aframe-ar.min.js"></script>
   <style>
-    /* Fullscreen and responsive styling */
+    /* Fullscreen Styling */
     body, html {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #000;
+      background: black;
     }
 
-    #arContainer {
-      position: relative;
+    #arScene {
       width: 100%;
       height: 100%;
-    }
-
-    a-scene {
       position: absolute;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
     }
 
-    /* Placeholder for UI elements */
     #controls {
       position: absolute;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
-      gap: 15px;
+      gap: 10px;
       background: rgba(0, 0, 0, 0.8);
       padding: 10px 15px;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
       z-index: 10;
     }
 
@@ -62,22 +54,21 @@
   </style>
 </head>
 <body>
-  <div id="arContainer">
-    <!-- AR Scene -->
-    <a-scene embedded arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false;">
-      <!-- Add your AR components here -->
-      <a-entity
-        id="object"
-        position="0 0 -2"
-        scale="0.1 0.1 0.1"
-        rotation="0 0 0"
-        gltf-model="">
-      </a-entity>
-      <a-entity camera></a-entity>
-    </a-scene>
-  </div>
+  <a-scene
+    id="arScene"
+    embedded
+    arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false;">
+    <!-- Placeholder 3D Object -->
+    <a-entity
+      id="object"
+      gltf-model=""
+      position="0 0 -2"
+      scale="0.5 0.5 0.5"
+      rotation="0 0 0"></a-entity>
+    <a-entity camera></a-entity>
+  </a-scene>
 
-  <!-- Placeholder UI Controls -->
+  <!-- UI Controls -->
   <div id="controls">
     <button id="scaleUp">Scale Up</button>
     <button id="scaleDown">Scale Down</button>
@@ -88,17 +79,17 @@
       const object = document.getElementById('object');
       const scaleUpBtn = document.getElementById('scaleUp');
       const scaleDownBtn = document.getElementById('scaleDown');
-      let scale = 0.1;
+      let scale = 0.5;
 
-      // Scale up the object
+      // Scale up the 3D object
       scaleUpBtn.addEventListener('click', () => {
-        scale += 0.05;
+        scale += 0.1;
         object.setAttribute('scale', `${scale} ${scale} ${scale}`);
       });
 
-      // Scale down the object
+      // Scale down the 3D object
       scaleDownBtn.addEventListener('click', () => {
-        if (scale > 0.05) scale -= 0.05;
+        if (scale > 0.1) scale -= 0.1;
         object.setAttribute('scale', `${scale} ${scale} ${scale}`);
       });
     });
