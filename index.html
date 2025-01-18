@@ -3,29 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Markerless AR</title>
+  <title>World Tracking AR</title>
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <!-- AR Scene -->
-  <a-scene embedded arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: true; ">
+  <a-scene
+    embedded
+    arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false;"
+    renderer="logarithmicDepthBuffer: true;"
+    vr-mode-ui="enabled: false">
+    
     <!-- 3D Model (GLB) -->
     <a-entity
+      id="model"
       gltf-model="assets/shape1.glb"
       scale="0.5 0.5 0.5"
-      position="0 0.5 -1"
-      rotation="0 180 0"
-      gesture-rotation
-      gesture-scale>
+      position="0 0 -1" <!-- Initial position in front of the camera -->
+      rotation="0 180 0">
     </a-entity>
 
     <!-- Camera -->
     <a-entity camera></a-entity>
   </a-scene>
 
-  <!-- Add Gesture Interaction -->
+  <!-- Add Interaction Script -->
   <script src="script.js"></script>
 </body>
 </html>
