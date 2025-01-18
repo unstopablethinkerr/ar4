@@ -1,43 +1,75 @@
-// Wait for the scene to load
-document.querySelector('a-scene').addEventListener('loaded', () => {
-  const model = document.querySelector('#model');
+let video = document.getElementById('video');
+let canvas = document.getElementById('canvas');
+let context = canvas.getContext('2d');
+let model;
+let selectedShape = null;
 
-  // Pin the object to a specific location in the real world
-  let isPinned = false;
-  let pinnedPosition = null;
-  let pinnedRotation = null;
-
-  // Pin the object when the user taps the screen
-  window.addEventListener('touchstart', () => {
-    if (!isPinned) {
-      // Get the current camera position and rotation
-      const camera = document.querySelector('[camera]').object3D;
-      const cameraPosition = camera.getWorldPosition(new THREE.Vector3());
-      const cameraRotation = camera.getWorldQuaternion(new THREE.Quaternion());
-
-      // Set the object's position and rotation relative to the camera
-      pinnedPosition = cameraPosition.clone();
-      pinnedRotation = cameraRotation.clone();
-
-      // Mark the object as pinned
-      isPinned = true;
-    }
-  });
-
-  // Update the object's position and rotation based on the camera's movement
-  document.querySelector('a-scene').addEventListener('renderstart', () => {
-    if (isPinned) {
-      const camera = document.querySelector('[camera]').object3D;
-      const cameraPosition = camera.getWorldPosition(new THREE.Vector3());
-      const cameraRotation = camera.getWorldQuaternion(new THREE.Quaternion());
-
-      // Calculate the object's new position and rotation
-      const newPosition = pinnedPosition.clone().sub(cameraPosition);
-      const newRotation = pinnedRotation.clone().multiply(cameraRotation.inverse());
-
-      // Update the object's position and rotation
-      model.object3D.position.copy(newPosition);
-      model.object3D.quaternion.copy(newRotation);
+// Load hand detection model
+handTrack.load().then(loadedModel => {
+  model = loadedModel;
+  handTrack.startVideo(video).then(status => {
+    if (status) {
+      runDetection();
     }
   });
 });
+
+// Run hand detection
+function runDetection() {
+  model.detect(video).then(predictions => {
+    if (predictions.length > 0) {
+      const hand = predictions[0];
+      const x = hand.bbox[0];
+
+      // Select shape based on hand position
+      if (x < window.innerWidth / 3) {
+        selectedShape = 'shape1';
+      } else if (x < (2 * window.innerWidth) / 3) {
+        selectedShape = 'shape2';
+      } else {
+        selectedShape = 'shape3';
+      }
+
+      // Load and animate the selected shape
+      loadAndAnimateShape(selectedShape);
+    }
+    requestAnimationFrame(runDetection);
+  });
+}
+
+// Three.js setup
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const loader = new THREE.GLTFLoader();
+let currentModel;
+
+// Load and animate the selected shape
+function loadAndAnimateShape(shape) {
+  if (currentModel) {
+    scene.remove(currentModel);
+  }
+
+  loader.load(`/${shape}.glb`, gltf => {
+    currentModel = gltf.scene;
+    scene.add(currentModel);
+
+    // Animate the model
+    const animate = () => {
+      currentModel.rotation.y += 0.01;
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    };
+    animate();
+
+    // Stop animation after 2 seconds
+    setTimeout(() => {
+      currentModel.rotation.y = 0;
+    }, 2000);
+  });
+}
+
+// Camera position
+camera.position.z = 5;
