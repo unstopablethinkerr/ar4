@@ -1,75 +1,61 @@
-let video = document.getElementById('video');
-let canvas = document.getElementById('canvas');
-let context = canvas.getContext('2d');
-let model;
-let selectedShape = null;
+// Get video and canvas elements
+const video = document.getElementById('camera-feed');
+const canvas = document.getElementById('overlay');
+const context = canvas.getContext('2d');
 
-// Load hand detection model
-handTrack.load().then(loadedModel => {
-  model = loadedModel;
-  handTrack.startVideo(video).then(status => {
-    if (status) {
-      runDetection();
+// Function to enable the back camera
+async function enableBackCamera() {
+  try {
+    // Get all available video devices
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+    // Find the back camera (usually labeled as "environment")
+    const backCamera = videoDevices.find(device => device.label.toLowerCase().includes('back'));
+
+    if (!backCamera) {
+      throw new Error('Back camera not found.');
     }
-  });
-});
 
-// Run hand detection
-function runDetection() {
-  model.detect(video).then(predictions => {
-    if (predictions.length > 0) {
-      const hand = predictions[0];
-      const x = hand.bbox[0];
-
-      // Select shape based on hand position
-      if (x < window.innerWidth / 3) {
-        selectedShape = 'shape1';
-      } else if (x < (2 * window.innerWidth) / 3) {
-        selectedShape = 'shape2';
-      } else {
-        selectedShape = 'shape3';
-      }
-
-      // Load and animate the selected shape
-      loadAndAnimateShape(selectedShape);
-    }
-    requestAnimationFrame(runDetection);
-  });
-}
-
-// Three.js setup
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ canvas: canvas });
-renderer.setSize(window.innerWidth, window.innerHeight);
-
-const loader = new THREE.GLTFLoader();
-let currentModel;
-
-// Load and animate the selected shape
-function loadAndAnimateShape(shape) {
-  if (currentModel) {
-    scene.remove(currentModel);
-  }
-
-  loader.load(`/${shape}.glb`, gltf => {
-    currentModel = gltf.scene;
-    scene.add(currentModel);
-
-    // Animate the model
-    const animate = () => {
-      currentModel.rotation.y += 0.01;
-      renderer.render(scene, camera);
-      requestAnimationFrame(animate);
+    // Set up video constraints for the back camera
+    const constraints = {
+      video: {
+        deviceId: backCamera.deviceId ? { exact: backCamera.deviceId } : undefined,
+        facingMode: { exact: 'environment' }, // Ensures the back camera is used
+        width: { ideal: window.innerWidth },
+        height: { ideal: window.innerHeight },
+      },
     };
-    animate();
 
-    // Stop animation after 2 seconds
-    setTimeout(() => {
-      currentModel.rotation.y = 0;
-    }, 2000);
-  });
+    // Start the video stream
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = stream;
+
+    // Wait for the video to load
+    video.onloadedmetadata = () => {
+      video.play();
+      console.log('Back camera is enabled and streaming.');
+    };
+  } catch (error) {
+    console.error('Error accessing the back camera:', error);
+    alert('Unable to access the back camera. Please ensure you are on a supported device.');
+  }
 }
 
-// Camera position
-camera.position.z = 5;
+// Call the function to enable the back camera
+enableBackCamera();
+
+// Optional: Add logic to draw on the canvas overlay
+function drawOnCanvas() {
+  context.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+  context.fillStyle = 'rgba(255, 0, 0, 0.5)'; // Example: Red semi-transparent rectangle
+  context.fillRect(50, 50, 100, 100); // Draw a rectangle
+}
+
+// Example: Draw on the canvas every frame
+function animate() {
+  drawOnCanvas();
+  requestAnimationFrame(animate);
+}
+
+animate();
