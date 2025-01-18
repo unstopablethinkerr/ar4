@@ -3,24 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR 3D Object Selector</title>
+  <meta name="theme-color" content="#000000"> <!-- Sets the address bar color on mobile -->
+  <title>Mobile Back Camera</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-    <!-- Video feed for hand detection -->
-    <video id="video" autoplay muted playsInline></video>
+  <!-- Video element for camera feed -->
+  <video id="camera-feed" autoplay muted playsInline></video>
 
-    <!-- Canvas for 3D rendering -->
-    <canvas id="canvas"></canvas>
-  </div>
+  <!-- Canvas for overlaying UI or processing -->
+  <canvas id="overlay"></canvas>
 
-  <!-- HandTrack.js -->
-  <script src="handtrack.min.js"></script>
-  <!-- Three.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r146/three.min.js"></script>
-  <!-- GLTF Loader -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.146/examples/js/loaders/GLTFLoader.js"></script>
   <!-- Main Script -->
   <script src="script.js"></script>
 </body>
