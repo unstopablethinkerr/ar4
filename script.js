@@ -1,80 +1,70 @@
 const video = document.getElementById('camera-feed');
 const handFrame = document.getElementById('hand-frame');
-const screenFlash = document.getElementById('screen-flash');
+const greenFlash = document.getElementById('green-flash');
 
-// HandTrack.js Model Parameters
-const modelParams = {
-  flipHorizontal: true, // Flip camera for mirrored view
-  maxNumBoxes: 1,       // Detect a single hand
-  iouThreshold: 0.5,    // Intersection over Union threshold
-  scoreThreshold: 0.8,  // Confidence threshold
-};
+// Initialize MediaPipe Hands
+const hands = new Hands({
+  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+});
 
-let model; // Placeholder for the hand tracking model
+hands.setOptions({
+  maxNumHands: 1, // Track one hand
+  modelComplexity: 1,
+  minDetectionConfidence: 0.7,
+  minTrackingConfidence: 0.5,
+});
 
-// Load Camera
-async function initCamera() {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: 'environment' },
-  });
-  video.srcObject = stream;
-  return new Promise((resolve) => {
-    video.onloadedmetadata = () => resolve(video);
-  });
-}
+// Add the detection results callback
+hands.onResults(onResults);
 
-// Load HandTrack.js Model
-async function loadModel() {
-  model = await handTrack.load(modelParams);
-  console.log('HandTrack.js model loaded');
-}
+// Initialize the camera
+const camera = new Camera(video, {
+  onFrame: async () => {
+    await hands.send({ image: video });
+  },
+  width: 1280,
+  height: 720,
+});
 
-// Start Detection
-async function startDetection() {
-  try {
-    await initCamera();
-    await loadModel();
+// Start the camera feed
+camera.start();
 
-    function runDetection() {
-      model.detect(video).then((predictions) => {
-        if (predictions.length > 0) {
-          // Get the first prediction
-          const hand = predictions[0].bbox; // [x, y, width, height]
-          updateHandFrame(hand);
-          flashScreen(); // Flash green border if a hand is detected
-        } else {
-          handFrame.style.display = 'none';
-          screenFlash.style.display = 'none';
-        }
-      }).catch((error) => {
-        console.error('Detection error:', error);
-      });
+/**
+ * Callback to handle results from MediaPipe Hands
+ * @param {Object} results - The detection results
+ */
+function onResults(results) {
+  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    // Extract hand landmarks
+    const handLandmarks = results.multiHandLandmarks[0];
 
-      requestAnimationFrame(runDetection);
-    }
+    // Calculate bounding box
+    const xCoords = handLandmarks.map((point) => point.x);
+    const yCoords = handLandmarks.map((point) => point.y);
 
-    runDetection();
-  } catch (error) {
-    console.error('Initialization error:', error);
+    const xMin = Math.min(...xCoords) * video.videoWidth;
+    const yMin = Math.min(...yCoords) * video.videoHeight;
+    const xMax = Math.max(...xCoords) * video.videoWidth;
+    const yMax = Math.max(...yCoords) * video.videoHeight;
+
+    const width = xMax - xMin;
+    const height = yMax - yMin;
+
+    // Update the bounding box position and size
+    handFrame.style.display = 'block';
+    handFrame.style.left = `${xMin}px`;
+    handFrame.style.top = `${yMin}px`;
+    handFrame.style.width = `${width}px`;
+    handFrame.style.height = `${height}px`;
+
+    // Flash the green border
+    greenFlash.style.display = 'block';
+    setTimeout(() => {
+      greenFlash.style.display = 'none';
+    }, 100); // Flash duration (ms)
+  } else {
+    // Hide the bounding box and green flash if no hand is detected
+    handFrame.style.display = 'none';
+    greenFlash.style.display = 'none';
   }
 }
-
-// Update Hand Frame
-function updateHandFrame([x, y, width, height]) {
-  handFrame.style.display = 'block';
-  handFrame.style.left = `${x}px`;
-  handFrame.style.top = `${y}px`;
-  handFrame.style.width = `${width}px`;
-  handFrame.style.height = `${height}px`;
-}
-
-// Flash Green Screen
-function flashScreen() {
-  screenFlash.style.display = 'block';
-  setTimeout(() => {
-    screenFlash.style.display = 'none';
-  }, 100); // Flash duration
-}
-
-// Initialize Detection
-startDetection();
