@@ -17,17 +17,32 @@ hands.setOptions({
 // Add the detection results callback
 hands.onResults(onResults);
 
-// Initialize the camera
-const camera = new Camera(video, {
-  onFrame: async () => {
-    await hands.send({ image: video });
-  },
-  width: 1280,
-  height: 720,
-});
+// Access the back camera and initialize the camera feed
+navigator.mediaDevices
+  .getUserMedia({
+    video: {
+      facingMode: { ideal: 'environment' }, // Use back camera
+      width: 1280,
+      height: 720,
+    },
+  })
+  .then((stream) => {
+    video.srcObject = stream;
+    video.play();
 
-// Start the camera feed
-camera.start();
+    const camera = new Camera(video, {
+      onFrame: async () => {
+        await hands.send({ image: video });
+      },
+      width: 1280,
+      height: 720,
+    });
+
+    camera.start();
+  })
+  .catch((err) => {
+    console.error('Error accessing the camera:', err);
+  });
 
 /**
  * Callback to handle results from MediaPipe Hands
@@ -38,14 +53,14 @@ function onResults(results) {
     // Extract hand landmarks
     const handLandmarks = results.multiHandLandmarks[0];
 
-    // Calculate bounding box
+    // Calculate bounding box based on video element dimensions
     const xCoords = handLandmarks.map((point) => point.x);
     const yCoords = handLandmarks.map((point) => point.y);
 
-    const xMin = Math.min(...xCoords) * video.videoWidth;
-    const yMin = Math.min(...yCoords) * video.videoHeight;
-    const xMax = Math.max(...xCoords) * video.videoWidth;
-    const yMax = Math.max(...yCoords) * video.videoHeight;
+    const xMin = Math.min(...xCoords) * video.offsetWidth;
+    const yMin = Math.min(...yCoords) * video.offsetHeight;
+    const xMax = Math.max(...xCoords) * video.offsetWidth;
+    const yMax = Math.max(...yCoords) * video.offsetHeight;
 
     const width = xMax - xMin;
     const height = yMax - yMin;
