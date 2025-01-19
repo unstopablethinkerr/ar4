@@ -1,8 +1,17 @@
-// Camera feed setup
 const video = document.getElementById('camera-feed');
 const handFrame = document.getElementById('hand-frame');
 
-// Access mobile back camera
+// Initialize MediaPipe Hands
+const hands = new Hands({
+  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+});
+hands.setOptions({
+  maxNumHands: 1,
+  minDetectionConfidence: 0.7,
+  minTrackingConfidence: 0.7,
+});
+
+// Start Camera
 async function initCamera() {
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: 'environment' },
@@ -13,18 +22,9 @@ async function initCamera() {
   });
 }
 
-// Hand detection with MediaPipe
-const hands = new Hands({
-  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-});
-hands.setOptions({
-  maxNumHands: 1,
-  minDetectionConfidence: 0.7,
-  minTrackingConfidence: 0.7,
-});
-
+// Hand Detection
 hands.onResults((results) => {
-  if (results.multiHandLandmarks.length > 0) {
+  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
     const hand = results.multiHandLandmarks[0];
     const bounds = calculateBoundingBox(hand);
     updateHandFrame(bounds);
@@ -33,6 +33,7 @@ hands.onResults((results) => {
   }
 });
 
+// Calculate Bounding Box
 function calculateBoundingBox(landmarks) {
   const x = landmarks.map((p) => p.x);
   const y = landmarks.map((p) => p.y);
@@ -44,6 +45,7 @@ function calculateBoundingBox(landmarks) {
   };
 }
 
+// Update Frame Position and Size
 function updateHandFrame({ left, top, width, height }) {
   handFrame.style.display = 'block';
   handFrame.style.left = `${left}px`;
@@ -52,6 +54,7 @@ function updateHandFrame({ left, top, width, height }) {
   handFrame.style.height = `${height}px`;
 }
 
+// Main Function
 async function main() {
   await initCamera();
   const camera = new Camera(video, {
