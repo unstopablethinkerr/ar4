@@ -1,4 +1,3 @@
-const video = document.getElementById('camera-feed');
 const handFrame = document.getElementById('hand-frame');
 
 // Initialize MediaPipe Hands
@@ -11,16 +10,8 @@ hands.setOptions({
   minTrackingConfidence: 0.7,
 });
 
-// Start Camera
-async function initCamera() {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: 'environment' },
-  });
-  video.srcObject = stream;
-  return new Promise((resolve) => {
-    video.onloadedmetadata = () => resolve(video);
-  });
-}
+// Access AR.js camera feed
+const videoElement = document.querySelector('a-scene canvas');
 
 // Hand Detection
 hands.onResults((results) => {
@@ -38,10 +29,10 @@ function calculateBoundingBox(landmarks) {
   const x = landmarks.map((p) => p.x);
   const y = landmarks.map((p) => p.y);
   return {
-    left: Math.min(...x) * video.videoWidth,
-    top: Math.min(...y) * video.videoHeight,
-    width: (Math.max(...x) - Math.min(...x)) * video.videoWidth,
-    height: (Math.max(...y) - Math.min(...y)) * video.videoHeight,
+    left: Math.min(...x) * videoElement.width,
+    top: Math.min(...y) * videoElement.height,
+    width: (Math.max(...x) - Math.min(...x)) * videoElement.width,
+    height: (Math.max(...y) - Math.min(...y)) * videoElement.height,
   };
 }
 
@@ -54,13 +45,28 @@ function updateHandFrame({ left, top, width, height }) {
   handFrame.style.height = `${height}px`;
 }
 
-// Main Function
-async function main() {
-  await initCamera();
-  const camera = new Camera(video, {
-    onFrame: async () => await hands.send({ image: video }),
-  });
-  camera.start();
+// Start AR.js and Hand Tracking
+async function startAR() {
+  hands.initialize();
+  const videoTrack = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'environment' },
+  }).then((stream) => stream.getVideoTracks()[0]);
+
+  const settings = videoTrack.getSettings();
+  videoElement.width = settings.width || 640;
+  videoElement.height = settings.height || 480;
+
+  const context = document.createElement('canvas').getContext('2d');
+  context.canvas.width = videoElement.width;
+  context.canvas.height = videoElement.height;
+
+  function processFrame() {
+    context.drawImage(videoElement, 0, 0, context.canvas.width, context.canvas.height);
+    hands.send({ image: context.canvas });
+    requestAnimationFrame(processFrame);
+  }
+  
+  processFrame();
 }
 
-main();
+startAR();
