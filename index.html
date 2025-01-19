@@ -5,35 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hand Tracking with Screen Flash</title>
   <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
-    #camera-feed {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    #hand-frame {
-      position: absolute;
-      border: 3px solid red;
-      display: none; /* Initially hidden */
-      z-index: 10;
-    }
-    #screen-flash {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 255, 0, 0.5); /* Green transparent overlay */
-      display: none; /* Hidden initially */
-      z-index: 9;
-    }
+   body, html {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#camera-feed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0; /* Video feed at the bottom */
+}
+
+#hand-frame {
+  position: absolute;
+  border: 3px solid red;
+  display: none; /* Initially hidden */
+  z-index: 10; /* Hand frame above the video feed */
+}
+
+#screen-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 255, 0, 0.5); /* Green transparent overlay */
+  display: none; /* Hidden initially */
+  z-index: 11; /* Screen flash on top of everything */
+}
+
   </style>
 </head>
 <body>
