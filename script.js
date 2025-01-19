@@ -1,61 +1,63 @@
-// Get video and canvas elements
+// Camera feed setup
 const video = document.getElementById('camera-feed');
-const canvas = document.getElementById('overlay');
-const context = canvas.getContext('2d');
+const handFrame = document.getElementById('hand-frame');
 
-// Function to enable the back camera
-async function enableBackCamera() {
-  try {
-    // Get all available video devices
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+// Access mobile back camera
+async function initCamera() {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'environment' },
+  });
+  video.srcObject = stream;
+  return new Promise((resolve) => {
+    video.onloadedmetadata = () => resolve(video);
+  });
+}
 
-    // Find the back camera (usually labeled as "environment")
-    const backCamera = videoDevices.find(device => device.label.toLowerCase().includes('back'));
+// Hand detection with MediaPipe
+const hands = new Hands({
+  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+});
+hands.setOptions({
+  maxNumHands: 1,
+  minDetectionConfidence: 0.7,
+  minTrackingConfidence: 0.7,
+});
 
-    if (!backCamera) {
-      throw new Error('Back camera not found.');
-    }
-
-    // Set up video constraints for the back camera
-    const constraints = {
-      video: {
-        deviceId: backCamera.deviceId ? { exact: backCamera.deviceId } : undefined,
-        facingMode: { exact: 'environment' }, // Ensures the back camera is used
-        width: { ideal: window.innerWidth },
-        height: { ideal: window.innerHeight },
-      },
-    };
-
-    // Start the video stream
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    video.srcObject = stream;
-
-    // Wait for the video to load
-    video.onloadedmetadata = () => {
-      video.play();
-      console.log('Back camera is enabled and streaming.');
-    };
-  } catch (error) {
-    console.error('Error accessing the back camera:', error);
-    alert('Unable to access the back camera. Please ensure you are on a supported device.');
+hands.onResults((results) => {
+  if (results.multiHandLandmarks.length > 0) {
+    const hand = results.multiHandLandmarks[0];
+    const bounds = calculateBoundingBox(hand);
+    updateHandFrame(bounds);
+  } else {
+    handFrame.style.display = 'none';
   }
+});
+
+function calculateBoundingBox(landmarks) {
+  const x = landmarks.map((p) => p.x);
+  const y = landmarks.map((p) => p.y);
+  return {
+    left: Math.min(...x) * video.videoWidth,
+    top: Math.min(...y) * video.videoHeight,
+    width: (Math.max(...x) - Math.min(...x)) * video.videoWidth,
+    height: (Math.max(...y) - Math.min(...y)) * video.videoHeight,
+  };
 }
 
-// Call the function to enable the back camera
-enableBackCamera();
-
-// Optional: Add logic to draw on the canvas overlay
-function drawOnCanvas() {
-  context.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-  context.fillStyle = 'rgba(255, 0, 0, 0.5)'; // Example: Red semi-transparent rectangle
-  context.fillRect(50, 50, 100, 100); // Draw a rectangle
+function updateHandFrame({ left, top, width, height }) {
+  handFrame.style.display = 'block';
+  handFrame.style.left = `${left}px`;
+  handFrame.style.top = `${top}px`;
+  handFrame.style.width = `${width}px`;
+  handFrame.style.height = `${height}px`;
 }
 
-// Example: Draw on the canvas every frame
-function animate() {
-  drawOnCanvas();
-  requestAnimationFrame(animate);
+async function main() {
+  await initCamera();
+  const camera = new Camera(video, {
+    onFrame: async () => await hands.send({ image: video }),
+  });
+  camera.start();
 }
 
-animate();
+main();
