@@ -1,49 +1,56 @@
+const video = document.getElementById('camera-feed');
 const handFrame = document.getElementById('hand-frame');
 
-// HandTrack.js Model Configuration
+// HandTrack.js Model Parameters
 const modelParams = {
-  flipHorizontal: false, // Don't flip, as AR.js uses the back camera
-  maxNumBoxes: 1,       // Only detect one hand
-  iouThreshold: 0.5,    // Intersection over Union threshold
-  scoreThreshold: 0.8,  // Confidence threshold
+  flipHorizontal: true, // Flip camera for mirrored view
+  maxNumBoxes: 1, // Detect a single hand
+  iouThreshold: 0.5, // Intersection over Union threshold
+  scoreThreshold: 0.8, // Confidence threshold
 };
 
-let model;
+let model; // Placeholder for the hand tracking model
+
+// Load Camera
+async function initCamera() {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'environment' },
+  });
+  video.srcObject = stream;
+  return new Promise((resolve) => {
+    video.onloadedmetadata = () => resolve(video);
+  });
+}
 
 // Load HandTrack.js Model
-handTrack.load(modelParams).then((loadedModel) => {
-  model = loadedModel;
-  console.log("HandTrack.js model loaded.");
-  startHandTracking();
-});
+async function loadModel() {
+  model = await handTrack.load(modelParams);
+  console.log('HandTrack.js model loaded');
+}
 
-// Access AR.js Camera Feed
-const arCamera = document.querySelector('a-scene canvas');
+// Start Detection
+async function startDetection() {
+  await initCamera();
+  await loadModel();
 
-// Start Hand Tracking
-function startHandTracking() {
-  // Ensure AR.js feed is ready
-  if (!arCamera) {
-    console.error("AR.js camera feed not found.");
-    return;
-  }
-
-  function detectHands() {
-    model.detect(arCamera).then((predictions) => {
+  function runDetection() {
+    model.detect(video).then((predictions) => {
       if (predictions.length > 0) {
-        const hand = predictions[0].bbox; // Bounding box: [x, y, width, height]
+        // Get the first prediction
+        const hand = predictions[0].bbox; // [x, y, width, height]
         updateHandFrame(hand);
       } else {
         handFrame.style.display = 'none';
       }
-      requestAnimationFrame(detectHands); // Loop for real-time detection
     });
+
+    requestAnimationFrame(runDetection);
   }
 
-  detectHands();
+  runDetection();
 }
 
-// Update Frame Position and Size
+// Update Hand Frame
 function updateHandFrame([x, y, width, height]) {
   handFrame.style.display = 'block';
   handFrame.style.left = `${x}px`;
@@ -51,3 +58,6 @@ function updateHandFrame([x, y, width, height]) {
   handFrame.style.width = `${width}px`;
   handFrame.style.height = `${height}px`;
 }
+
+// Initialize Detection
+startDetection();
