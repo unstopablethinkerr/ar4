@@ -1,72 +1,53 @@
 const handFrame = document.getElementById('hand-frame');
 
-// Initialize MediaPipe Hands
-const hands = new Hands({
-  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-});
-hands.setOptions({
-  maxNumHands: 1,
-  minDetectionConfidence: 0.7,
-  minTrackingConfidence: 0.7,
+// HandTrack.js Model Configuration
+const modelParams = {
+  flipHorizontal: false, // Don't flip, as AR.js uses the back camera
+  maxNumBoxes: 1,       // Only detect one hand
+  iouThreshold: 0.5,    // Intersection over Union threshold
+  scoreThreshold: 0.8,  // Confidence threshold
+};
+
+let model;
+
+// Load HandTrack.js Model
+handTrack.load(modelParams).then((loadedModel) => {
+  model = loadedModel;
+  console.log("HandTrack.js model loaded.");
+  startHandTracking();
 });
 
-// Access AR.js camera feed
-const videoElement = document.querySelector('a-scene canvas');
+// Access AR.js Camera Feed
+const arCamera = document.querySelector('a-scene canvas');
 
-// Hand Detection
-hands.onResults((results) => {
-  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-    const hand = results.multiHandLandmarks[0];
-    const bounds = calculateBoundingBox(hand);
-    updateHandFrame(bounds);
-  } else {
-    handFrame.style.display = 'none';
+// Start Hand Tracking
+function startHandTracking() {
+  // Ensure AR.js feed is ready
+  if (!arCamera) {
+    console.error("AR.js camera feed not found.");
+    return;
   }
-});
 
-// Calculate Bounding Box
-function calculateBoundingBox(landmarks) {
-  const x = landmarks.map((p) => p.x);
-  const y = landmarks.map((p) => p.y);
-  return {
-    left: Math.min(...x) * videoElement.width,
-    top: Math.min(...y) * videoElement.height,
-    width: (Math.max(...x) - Math.min(...x)) * videoElement.width,
-    height: (Math.max(...y) - Math.min(...y)) * videoElement.height,
-  };
+  function detectHands() {
+    model.detect(arCamera).then((predictions) => {
+      if (predictions.length > 0) {
+        const hand = predictions[0].bbox; // Bounding box: [x, y, width, height]
+        updateHandFrame(hand);
+      } else {
+        handFrame.style.display = 'none';
+      }
+      requestAnimationFrame(detectHands); // Loop for real-time detection
+    });
+  }
+
+  detectHands();
 }
 
 // Update Frame Position and Size
-function updateHandFrame({ left, top, width, height }) {
+function updateHandFrame([x, y, width, height]) {
   handFrame.style.display = 'block';
-  handFrame.style.left = `${left}px`;
-  handFrame.style.top = `${top}px`;
+  handFrame.style.left = `${x}px`;
+  handFrame.style.top = `${y}px`;
   handFrame.style.width = `${width}px`;
   handFrame.style.height = `${height}px`;
 }
-
-// Start AR.js and Hand Tracking
-async function startAR() {
-  hands.initialize();
-  const videoTrack = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: 'environment' },
-  }).then((stream) => stream.getVideoTracks()[0]);
-
-  const settings = videoTrack.getSettings();
-  videoElement.width = settings.width || 640;
-  videoElement.height = settings.height || 480;
-
-  const context = document.createElement('canvas').getContext('2d');
-  context.canvas.width = videoElement.width;
-  context.canvas.height = videoElement.height;
-
-  function processFrame() {
-    context.drawImage(videoElement, 0, 0, context.canvas.width, context.canvas.height);
-    hands.send({ image: context.canvas });
-    requestAnimationFrame(processFrame);
-  }
-  
-  processFrame();
-}
-
-startAR();
